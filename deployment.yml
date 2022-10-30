@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-backend-deployment
+  labels:
+    app: php-backend
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: php-backend
+  template:
+    metadata:
+      labels:
+        app: php-backend
+    spec:
+      containers:
+      - name: php-backend
+        image: hugovasc/kub-php-backend:1.0
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fileserver-mysql
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+  - ReadWriteMany
+  nfs:
+    path: /dados
+    server: 10.1.65.98
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fileserver-mysql
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: hugovasc/kub-meubanco:1.0
+        imagePullPolicy: Always
+        args:
+        - "--ignore-db-dir=lost+found"
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: fileserver-mysql
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: fileserver-mysql
+        persistentVolumeClaim:
+          claimName: fileserver-mysql
