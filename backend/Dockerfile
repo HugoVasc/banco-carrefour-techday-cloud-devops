@@ -1,12 +1,17 @@
-FROM python:3.8-slim-buster
+FROM php:7.4-apache
 
-WORKDIR /python-docker
+WORKDIR /var/www/html
+COPY index.php /var/www/html/
+COPY conexao.php /var/www/html/
 
-COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+RUN apt-get update && apt-get install -y \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libpng-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd \
+    && docker-php-ext-install pdo_mysql \
+    && docker-php-ext-install mysqli
 
-COPY . .
 
-EXPOSE 5000
-
-CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
+EXPOSE 80
